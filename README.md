@@ -1,45 +1,41 @@
 --[[
 >info of this Mm2 Script<
-So this script make for testing and example for some function of part for beginner or even advanced,
-This is Open source Script is free to modify or edit and you guys don't need to give me credit for this work too even if you steal it or you are skid so I will anyway don't care
-___________
-I only learn Lua for 2-3 years and have some other knowledge like Luau, LuaJit, Lua FiveM and some other,
-forgot to say that I'm only just 15 year old
-___________
-This Mm2 Script is just a simple code and function and I don't have some ideas too so I only make just a simple function and thank you for use this open source script, Thanks for support <3
--- https://github.com/Backlostunking/Open-Source/tree/main
---> free webhooks script: https://github.com/Backlostunking/Open-Source/blob/main/Webhooks
-Enjoy using this open source script and my discord username: scriptermrbacon
-]]
+...
+O resto dos seus comentários permanecem aqui
+--]]
 
--- [[ Inicialização do Jogo ]]
+-- Inicialização padrão
 if not game:IsLoaded() then
     local s = pcall(function() game.Loaded:Wait() end)
     if not s then repeat task.wait() until game:IsLoaded() end
 end
-if game.PlaceId ~= 142823291 then return end -- Verificação do MM2
+if game.PlaceId ~= 142823291 then return end -- Suporte apenas para MM2
 
--- [[ Carregamento da Biblioteca e Identificação ]]
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/vrry/linoria/main/source.lua"))()
+-- Carregando a Biblioteca
+local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/Backlostunking/ScriptLua/refs/heads/main/Orion-GB-V2.Lua"))()
 local executor = identifyexecutor and identifyexecutor() or getexecutorname and getexecutorname() or "Desconhecido"
 local GameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
 
--- [[ Criação da Janela Principal (Design Moderno e Cor Vibrante) ]]
-local Window = Library:CreateWindow({
-    Title = ("Vargxs Hub • " .. GameName .. " ✓ " .. executor),
-    Center = true,
-    AutoShow = true,
+-- Criando a Janela Principal com Cores Vibrantes no Título
+local Window = OrionLib:MakeWindow({
+    IntroText = "Script Feito por Vargaxs",
+    IntroIcon = "rbxassetid://7733955511",
+    Name = ("Vargxs Hub • "..GameName.." ✓ Executor "..executor),
+    IntroToggleIcon = "rbxassetid://4335489011",
+    HidePremium = false,
+    SaveConfig = false,
+    IntroEnabled = true,
+    ConfigFolder = "Mm2SHub"
 })
-Library:SetAccentColor(Color3.fromRGB(255, 50, 80)) -- Cor Vermelho/Rosa vibrante (combina com a imagem)
 
--- [[ Criação das Abas Organizadas ]]
-local TabESP = Window:AddTab("📡 ESP", "globe")
-local TabCombate = Window:AddTab("🔫 Combate", "crosshairs")
-local TabFling = Window:AddTab("🌀 Fling", "rocket")
-local TabTeleport = Window:AddTab("📦 Teleportes", "plane")
-local TabLocal = Window:AddTab("🧍 Local Player", "user")
+-- CRIAÇÃO DAS ABAS (Agora mais organizadas)
+local TabESP = Window:MakeTab({Name = "📡 ESP", Icon = "rbxassetid://4483345998", PremiumOnly = false})
+local TabCombate = Window:MakeTab({Name = "🔫 Combate / Aimbot", Icon = "rbxassetid://4335489011", PremiumOnly = false})
+local TabFling = Window:MakeTab({Name = "🌀 Fling", Icon = "rbxassetid://4335489011", PremiumOnly = false})
+local TabTeleport = Window:MakeTab({Name = "📦 Teleportes", Icon = "rbxassetid://4335489011", PremiumOnly = false})
+local TabLocal = Window:MakeTab({Name = "🧍 Local Player", Icon = "rbxassetid://4335489011", PremiumOnly = false})
 
--- [[ Ambiente, clone ref e Variáveis (Mantidos intactos) ]]
+-- Ambiente e Variáveis Globais
 local env = getgenv and getgenv() or getrenv and getrenv() or getfenv and getfenv(0) or _G
 local cloneref = cloneref or (function()
     local s, func = pcall(function() return loadstring(game:HttpGet("https://raw.githubusercontent.com/Backlostunking/Open-Source/refs/heads/main/cloneref-TheCloneVM"))() end)
@@ -56,7 +52,7 @@ local Char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 local Hum = Char and Char:FindFirstChildWhichIsA("Humanoid")
 local Root = (Hum and Hum.RootPart) or Char:FindFirstChild("HumanoidRootPart") or Char:FindFirstChild("Torso") or Char:FindFirstChild("UpperTorso")
 
--- Atualizar ao morrer
+-- Atualizar variáveis ao morrer
 LocalPlayer.CharacterAdded:Connect(function()
     repeat task.wait()
         LocalPlayer = Players.LocalPlayer or Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
@@ -67,7 +63,7 @@ LocalPlayer.CharacterAdded:Connect(function()
     until LocalPlayer and backpack and Char and Hum and Root
 end)
 
--- [[ Funções de Lógica Principal (Mantidas 100% intactas) ]]
+-- Funções Principais (Mantidas intactas)
 local function SHubFling(TargetPlayer)
     if not (Char and Hum and Root) then return end
     local TCharacter = TargetPlayer.Character
@@ -170,7 +166,284 @@ local function getPlayerNames()
     return name
 end
 
--- [[ SISTEMA DE AIMBOT (Função de Hook Intacta) ]]
+-- =========================================================================
+-- ABA ESP (Jogadores e Armas)
+-- =========================================================================
+TabESP:AddToggle({
+    Name = "ESP Jogadores (Função e Nome)",
+    Default = false,
+    Callback = function(Value)
+        env.ESP_ENABLED = Value
+        local updateLoop = nil
+        local roleColors = {
+            Murderer = Color3.fromRGB(255, 0, 0),
+            Sheriff = Color3.fromRGB(0, 0, 255),
+            Hero = Color3.fromRGB(255, 255, 0),
+            Innocent = Color3.fromRGB(0, 255, 0),
+            Default = Color3.fromRGB(200, 200, 200)
+        }
+        local function clearESP()
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local head = player.Character:FindFirstChild("Head")
+                    if head then
+                        local esp = head:FindFirstChild("RoleESP")
+                        if esp then esp:Destroy() end
+                    end
+                    local hl = player.Character:FindFirstChild("RoleHighlight")
+                    if hl then hl:Destroy() end
+                end
+            end
+        end
+        local function applyHighlight(character, role)
+            local existing = character:FindFirstChild("RoleHighlight")
+            if existing then existing:Destroy() end
+            local hl = Instance.new("Highlight")
+            hl.Name = "RoleHighlight"
+            hl.FillColor = roleColors[role] or roleColors.Default
+            hl.OutlineColor = Color3.new(1, 1, 1)
+            hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+            hl.FillTransparency = 0.4
+            hl.OutlineTransparency = 0
+            hl.Parent = character
+        end
+        local function createBillboard(head, role, playerName)
+            local esp = Instance.new("BillboardGui")
+            esp.Name = "RoleESP"
+            esp.Adornee = head
+            esp.Size = UDim2.new(5, 0, 5, 0)
+            esp.AlwaysOnTop = true
+            esp.Parent = head
+            local label = Instance.new("TextLabel")
+            label.Name = "RoleLabel"
+            label.Parent = esp
+            label.Size = UDim2.new(1, 0, 1, 0)
+            label.BackgroundTransparency = 1
+            label.TextStrokeTransparency = 0
+            label.TextSize = 14
+            label.TextColor3 = roleColors[role] or roleColors.Default
+            label.Font = Enum.Font.FredokaOne
+            label.Text = ("Função: %s • Nome: %s"):format(role, playerName)
+        end
+        local function updateESP()
+            local roles = getRoles()
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local head = player.Character:FindFirstChild("Head")
+                    if head then
+                        local role = roles[player.Name] or "Default"
+                        if not head:FindFirstChild("RoleESP") then
+                            createBillboard(head, role, player.Name)
+                        else
+                            local label = head.RoleESP:FindFirstChild("RoleLabel")
+                            if label then
+                                label.Text = ("Função: %s • Nome: %s"):format(role, player.Name)
+                                label.TextColor3 = roleColors[role] or roleColors.Default
+                            end
+                        end
+                        local light = player.Character:FindFirstChild("RoleHighlight")
+                        if not light then
+                            applyHighlight(player.Character, role)
+                        else
+                            light.FillColor = roleColors[role] or roleColors.Default
+                        end
+                    end
+                end
+            end
+        end
+        local function startESP()
+            if updateLoop then return end
+            updateLoop = task.spawn(function()
+                while env.ESP_ENABLED do
+                    pcall(updateESP)
+                    task.wait(0.25)
+                end
+                clearESP()
+                updateLoop = nil
+            end)
+        end
+        if Value then startESP() else clearESP() end
+    end
+})
+
+TabESP:AddToggle({
+    Name = "ESP Armas",
+    Default = false,
+    Callback = function(Value)
+        env.GunEsp = Value
+        local gun = Workspace:FindFirstChild("GunDrop", true)
+        if not env.GunEsp then
+            if gun then
+                if gun:FindFirstChild("GunHighlight") then gun:FindFirstChild("GunHighlight"):Destroy() end
+                if gun:FindFirstChild("GunEsp") then gun:FindFirstChild("GunEsp"):Destroy() end
+            end
+        end
+        while env.GunEsp do
+            gun = Workspace:FindFirstChild("GunDrop", true)
+            if gun then
+                if not gun:FindFirstChild("GunHighlight") then
+                    local gunh = Instance.new("Highlight", gun)
+                    gunh.Name = "GunHighlight"
+                    gunh.FillColor = Color3.new(1, 1, 0)
+                    gunh.OutlineColor = Color3.new(1, 1, 1)
+                    gunh.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                    gunh.FillTransparency = 0.4
+                    gunh.OutlineTransparency = 0.5
+                end
+                if not gun:FindFirstChild("GunEsp") then
+                    local esp = Instance.new("BillboardGui")
+                    esp.Name = "GunEsp"
+                    esp.Adornee = gun
+                    esp.Size = UDim2.new(5, 0, 5, 0)
+                    esp.AlwaysOnTop = true
+                    esp.Parent = gun
+                    local text = Instance.new("TextLabel", esp)
+                    text.Name = "GunLabel"
+                    text.Size = UDim2.new(1, 0, 1, 0)
+                    text.BackgroundTransparency = 1
+                    text.TextStrokeTransparency = 0
+                    text.TextColor3 = Color3.fromRGB(255, 255, 0)
+                    text.Font = Enum.Font.FredokaOne
+                    text.TextSize = 16
+                    text.Text = "Arma Caída"
+                end
+            end
+            task.wait(0.1)
+        end
+    end
+})
+
+-- =========================================================================
+-- ABA COMBATE / AIMBOT
+-- =========================================================================
+TabCombate:AddButton({
+    Name = "Pegar Arma",
+    Callback = function()
+        if Char and Char ~= nil and Root then
+            local gun = Workspace:FindFirstChild("GunDrop", true)
+            if gun then
+                if firetouchinterest then
+                    firetouchinterest(Root, gun, 0)
+                    firetouchinterest(Root, gun, 1)
+                else
+                    gun.CFrame = Root.CFrame
+                end
+            end
+        end
+    end
+})
+
+TabCombate:AddToggle({
+    Name = "Auto-Pegar Arma",
+    Default = false,
+    Callback = function(Value)
+        env.AGG = Value
+        while env.AGG do
+            if Char and Char ~= nil and Root then
+                gun = Workspace:FindFirstChild("GunDrop", true)
+                if gun then
+                    if firetouchinterest then
+                        firetouchinterest(Root, gun, 0)
+                        firetouchinterest(Root, gun, 1)
+                    else
+                        gun.CFrame = Root.CFrame
+                    end
+                end
+            end
+            task.wait(0.1)
+        end
+    end
+})
+
+TabCombate:AddButton({
+    Name = "Roubar Arma (Xerife e Herói)",
+    Callback = function()
+        if Char and Char ~= nil and Hum and backpack then
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer then
+                    if p.Character and p.Character:FindFirstChild("Gun") then
+                        p.Character:FindFirstChild("Gun").Parent = Char
+                        Hum:EquipTool(Char:FindFirstChild("Gun"))
+                        Hum:UnequipTools()
+                    elseif p:FindFirstChild("Backpack") and p.Backpack:FindFirstChild("Gun") then
+                        p.Backpack:FindFirstChild("Gun").Parent = backpack
+                        Hum:EquipTool(backpack:FindFirstChild("Gun"))
+                        Hum:UnequipTools()
+                    end
+                end
+            end
+        end
+    end
+})
+
+TabCombate:AddToggle({
+    Name = "Botão de Atirar no Assassino",
+    Default = false,
+    Callback = function(Value)
+        local guip, CoreGui = nil, game:FindService("CoreGui")
+        if gethui then
+            guip = gethui()
+        elseif CoreGui and CoreGui:FindFirstChild("RobloxGui") then
+            guip = CoreGui.RobloxGui
+        elseif CoreGui then
+            guip = CoreGui
+        else
+            guip = LocalPlayer:FindFirstChild("PlayerGui")
+        end
+        if Value then
+            if not guip:FindFirstChild("GunW") then
+                local GunGui = Instance.new("ScreenGui", guip)
+                GunGui.Name = "GunW"
+                local TextButton = Instance.new("TextButton", GunGui)
+                TextButton.Draggable = true
+                TextButton.Position = UDim2.new(0.5, 187, 0.5, -176)
+                TextButton.Size = UDim2.new(0, 50, 0, 40)
+                TextButton.TextStrokeTransparency = 0
+                TextButton.BackgroundTransparency = 0.2
+                TextButton.BackgroundColor3 = Color3.fromRGB(44, 44, 45)
+                TextButton.BorderColor3 = Color3.new(1, 1, 1)
+                TextButton.Text = "ATIRAR" -- Texto traduzido
+                TextButton.TextColor3 = Color3.new(1, 1, 1)
+                TextButton.TextSize = 8
+                TextButton.Visible = true
+                TextButton.AnchorPoint = Vector2.new(0.4, 0.2)
+                TextButton.Active = true
+                TextButton.TextWrapped = true
+                local corner = Instance.new("UICorner", TextButton)
+                local UIStroke = Instance.new("UIStroke", TextButton)
+                UIStroke.Color = Color3.new(0, 0, 0)
+                UIStroke.Thickness = 4
+                UIStroke.Transparency = 0.4
+                local UIAspectRatioConstraint = Instance.new("UIAspectRatioConstraint", TextButton)
+                UIAspectRatioConstraint.AspectRatio = 1.5
+                local UIGradient = Instance.new("UIGradient", TextButton)
+                UIGradient.Color = ColorSequence.new{
+                    ColorSequenceKeypoint.new(0, Color3.new(0.3, 0.3, 0.3)),
+                    ColorSequenceKeypoint.new(1, Color3.new(1, 1, 1))
+                }
+                local function rotateGradient()
+                    local tween = Tween:Create(UIGradient, TweenInfo.new(2, Enum.EasingStyle.Linear), {Rotation = UIGradient.Rotation + 360})
+                    tween:Play()
+                    tween.Completed:Connect(rotateGradient)
+                end
+                rotateGradient()
+                TextButton.MouseButton1Click:Connect(function()
+                    if Char:FindFirstChild("Gun") then
+                        pcall(function()
+                            Char.Gun.KnifeLocal.CreateBeam.RemoteFunction:InvokeServer(1, (getMurdererTarget()), "AH2")
+                        end)
+                    end
+                end)
+            end
+        else
+            if guip:FindFirstChild("GunW") then
+                guip:FindFirstChild("GunW"):Destroy()
+            end
+        end
+    end
+})
+
+-- SISTEMA DE AIMBOT
 local function check()
     local success, hookFunc = false, nil
     if not getnamecallmethod or not checkcaller then return success end
@@ -213,575 +486,415 @@ local function check()
 end
 local isUseHook = check()
 
--- =======================================================================
--- ABA ESP 
--- =======================================================================
-TabESP:AddToggle("ESP Jogadores (Função e Nome)", { Default = false }, function(Value)
-    env.ESP_ENABLED = Value
-    local updateLoop = nil
-    local roleColors = {
-        Murderer = Color3.fromRGB(255, 0, 0),
-        Sheriff = Color3.fromRGB(0, 0, 255),
-        Hero = Color3.fromRGB(255, 255, 0),
-        Innocent = Color3.fromRGB(0, 255, 0),
-        Default = Color3.fromRGB(200, 200, 200)
-    }
-    local function clearESP()
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character then
-                local head = player.Character:FindFirstChild("Head")
-                if head then
-                    local esp = head:FindFirstChild("RoleESP")
-                    if esp then esp:Destroy() end
-                end
-                local hl = player.Character:FindFirstChild("RoleHighlight")
-                if hl then hl:Destroy() end
-            end
-        end
-    end
-    local function applyHighlight(character, role)
-        local existing = character:FindFirstChild("RoleHighlight")
-        if existing then existing:Destroy() end
-        local hl = Instance.new("Highlight")
-        hl.Name = "RoleHighlight"
-        hl.FillColor = roleColors[role] or roleColors.Default
-        hl.OutlineColor = Color3.new(1, 1, 1)
-        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-        hl.FillTransparency = 0.4
-        hl.OutlineTransparency = 0
-        hl.Parent = character
-    end
-    local function createBillboard(head, role, playerName)
-        local esp = Instance.new("BillboardGui")
-        esp.Name = "RoleESP"
-        esp.Adornee = head
-        esp.Size = UDim2.new(5, 0, 5, 0)
-        esp.AlwaysOnTop = true
-        esp.Parent = head
-        local label = Instance.new("TextLabel")
-        label.Name = "RoleLabel"
-        label.Parent = esp
-        label.Size = UDim2.new(1, 0, 1, 0)
-        label.BackgroundTransparency = 1
-        label.TextStrokeTransparency = 0
-        label.TextSize = 14
-        label.TextColor3 = roleColors[role] or roleColors.Default
-        label.Font = Enum.Font.FredokaOne
-        label.Text = ("Função: %s • Nome: %s"):format(role, playerName)
-    end
-    local function updateESP()
-        local roles = getRoles()
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character then
-                local head = player.Character:FindFirstChild("Head")
-                if head then
-                    local role = roles[player.Name] or "Default"
-                    if not head:FindFirstChild("RoleESP") then
-                        createBillboard(head, role, player.Name)
-                    else
-                        local label = head.RoleESP:FindFirstChild("RoleLabel")
-                        if label then
-                            label.Text = ("Função: %s • Nome: %s"):format(role, player.Name)
-                            label.TextColor3 = roleColors[role] or roleColors.Default
-                        end
+local AimbotMem = TabCombate:AddToggle({
+    Name = "Aimbot com Arma",
+    Default = false,
+    Callback = function(Value)
+        if isUseHook then
+            env.enabledGunBot = Value
+            env.GunBotConnection = env.GunBotConnection or {}
+            local function setupGunBot(character)
+                if not character then return end
+                local gun = character:FindFirstChild("Gun")
+                if not gun then
+                    if env.GunBotConnection.Connection then
+                        env.GunBotConnection.Connection:Disconnect()
+                        env.GunBotConnection.Connection = nil
                     end
-                    local light = player.Character:FindFirstChild("RoleHighlight")
-                    if not light then
-                        applyHighlight(player.Character, role)
-                    else
-                        light.FillColor = roleColors[role] or roleColors.Default
+                    return
+                end
+                local knifeScript = gun:FindFirstChild("KnifeLocal")
+                local cb = knifeScript and knifeScript:FindFirstChild("CreateBeam")
+                local remote = cb and cb:FindFirstChild("RemoteFunction")
+                if not knifeScript or not cb or not remote then return end
+                if env.enabledGunBot then
+                    if env.GunBotConnection.Connection then
+                        env.GunBotConnection.Connection:Disconnect()
+                        env.GunBotConnection.Connection = nil
+                    end
+                    env.GunBotConnection.Connection = gun.Activated:Connect(function()
+                        local targetPos, isSelf = getMurdererTarget()
+                        if not targetPos or isSelf or not remote then return end
+                        remote:InvokeServer(1, targetPos, "AH2")
+                    end)
+                else
+                    if env.GunBotConnection.Connection then
+                        env.GunBotConnection.Connection:Disconnect()
+                        env.GunBotConnection.Connection = nil
                     end
                 end
             end
-        end
-    end
-    local function startESP()
-        if updateLoop then return end
-        updateLoop = task.spawn(function()
-            while env.ESP_ENABLED do
-                pcall(updateESP)
+            while env.enabledGunBot do
+                if Char and Char:FindFirstChild("Gun") then
+                    setupGunBot(Char)
+                end
                 task.wait(0.25)
             end
-            clearESP()
-            updateLoop = nil
-        end)
-    end
-    if Value then startESP() else clearESP() end
-end)
-
-TabESP:AddToggle("ESP Armas", { Default = false }, function(Value)
-    env.GunEsp = Value
-    local gun = Workspace:FindFirstChild("GunDrop", true)
-    if not env.GunEsp then
-        if gun then
-            if gun:FindFirstChild("GunHighlight") then gun:FindFirstChild("GunHighlight"):Destroy() end
-            if gun:FindFirstChild("GunEsp") then gun:FindFirstChild("GunEsp"):Destroy() end
-        end
-    end
-    while env.GunEsp do
-        gun = Workspace:FindFirstChild("GunDrop", true)
-        if gun then
-            if not gun:FindFirstChild("GunHighlight") then
-                local gunh = Instance.new("Highlight", gun)
-                gunh.Name = "GunHighlight"
-                gunh.FillColor = Color3.new(1, 1, 0)
-                gunh.OutlineColor = Color3.new(1, 1, 1)
-                gunh.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                gunh.FillTransparency = 0.4
-                gunh.OutlineTransparency = 0.5
-            end
-            if not gun:FindFirstChild("GunEsp") then
-                local esp = Instance.new("BillboardGui")
-                esp.Name = "GunEsp"
-                esp.Adornee = gun
-                esp.Size = UDim2.new(5, 0, 5, 0)
-                esp.AlwaysOnTop = true
-                esp.Parent = gun
-                local text = Instance.new("TextLabel", esp)
-                text.Name = "GunLabel"
-                text.Size = UDim2.new(1, 0, 1, 0)
-                text.BackgroundTransparency = 1
-                text.TextStrokeTransparency = 0
-                text.TextColor3 = Color3.fromRGB(255, 255, 0)
-                text.Font = Enum.Font.FredokaOne
-                text.TextSize = 16
-                text.Text = "Arma Caída"
-            end
-        end
-        task.wait(0.1)
-    end
-end)
-
--- =======================================================================
--- ABA COMBATE
--- =======================================================================
-TabCombate:AddButton("Pegar Arma", function()
-    if Char and Char ~= nil and Root then
-        local gun = Workspace:FindFirstChild("GunDrop", true)
-        if gun then
-            if firetouchinterest then
-                firetouchinterest(Root, gun, 0)
-                firetouchinterest(Root, gun, 1)
-            else
-                gun.CFrame = Root.CFrame
-            end
-        end
-    end
-end)
-
-TabCombate:AddToggle("Auto-Pegar Arma", { Default = false }, function(Value)
-    env.AGG = Value
-    while env.AGG do
-        if Char and Char ~= nil and Root then
-            gun = Workspace:FindFirstChild("GunDrop", true)
-            if gun then
-                if firetouchinterest then
-                    firetouchinterest(Root, gun, 0)
-                    firetouchinterest(Root, gun, 1)
-                else
-                    gun.CFrame = Root.CFrame
-                end
-            end
-        end
-        task.wait(0.1)
-    end
-end)
-
-TabCombate:AddButton("Roubar Arma (Xerife e Herói)", function()
-    if Char and Char ~= nil and Hum and backpack then
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer then
-                if p.Character and p.Character:FindFirstChild("Gun") then
-                    p.Character:FindFirstChild("Gun").Parent = Char
-                    Hum:EquipTool(Char:FindFirstChild("Gun"))
-                    Hum:UnequipTools()
-                elseif p:FindFirstChild("Backpack") and p.Backpack:FindFirstChild("Gun") then
-                    p.Backpack:FindFirstChild("Gun").Parent = backpack
-                    Hum:EquipTool(backpack:FindFirstChild("Gun"))
-                    Hum:UnequipTools()
-                end
-            end
-        end
-    end
-end)
-
-TabCombate:AddToggle("Botão de Atirar no Assassino", { Default = false }, function(Value)
-    local guip, CoreGui = nil, game:FindService("CoreGui")
-    if gethui then
-        guip = gethui()
-    elseif CoreGui and CoreGui:FindFirstChild("RobloxGui") then
-        guip = CoreGui.RobloxGui
-    elseif CoreGui then
-        guip = CoreGui
-    else
-        guip = LocalPlayer:FindFirstChild("PlayerGui")
-    end
-    if Value then
-        if not guip:FindFirstChild("GunW") then
-            local GunGui = Instance.new("ScreenGui", guip)
-            GunGui.Name = "GunW"
-            local TextButton = Instance.new("TextButton", GunGui)
-            TextButton.Draggable = true
-            TextButton.Position = UDim2.new(0.5, 187, 0.5, -176)
-            TextButton.Size = UDim2.new(0, 50, 0, 40)
-            TextButton.TextStrokeTransparency = 0
-            TextButton.BackgroundTransparency = 0.2
-            TextButton.BackgroundColor3 = Color3.fromRGB(44, 44, 45)
-            TextButton.BorderColor3 = Color3.new(1, 1, 1)
-            TextButton.Text = "ATIRAR" 
-            TextButton.TextColor3 = Color3.new(1, 1, 1)
-            TextButton.TextSize = 8
-            TextButton.Visible = true
-            TextButton.AnchorPoint = Vector2.new(0.4, 0.2)
-            TextButton.Active = true
-            TextButton.TextWrapped = true
-            local corner = Instance.new("UICorner", TextButton)
-            local UIStroke = Instance.new("UIStroke", TextButton)
-            UIStroke.Color = Color3.new(0, 0, 0)
-            UIStroke.Thickness = 4
-            UIStroke.Transparency = 0.4
-            local UIAspectRatioConstraint = Instance.new("UIAspectRatioConstraint", TextButton)
-            UIAspectRatioConstraint.AspectRatio = 1.5
-            local UIGradient = Instance.new("UIGradient", TextButton)
-            UIGradient.Color = ColorSequence.new{
-                ColorSequenceKeypoint.new(0, Color3.new(0.3, 0.3, 0.3)),
-                ColorSequenceKeypoint.new(1, Color3.new(1, 1, 1))
-            }
-            local function rotateGradient()
-                local tween = Tween:Create(UIGradient, TweenInfo.new(2, Enum.EasingStyle.Linear), {Rotation = UIGradient.Rotation + 360})
-                tween:Play()
-                tween.Completed:Connect(rotateGradient)
-            end
-            rotateGradient()
-            TextButton.MouseButton1Click:Connect(function()
-                if Char:FindFirstChild("Gun") then
-                    pcall(function()
-                        Char.Gun.KnifeLocal.CreateBeam.RemoteFunction:InvokeServer(1, (getMurdererTarget()), "AH2")
-                    end)
-                end
-            end)
-        end
-    else
-        if guip:FindFirstChild("GunW") then
-            guip:FindFirstChild("GunW"):Destroy()
-        end
-    end
-end)
-
-local AimbotToggle = TabCombate:AddToggle("Aimbot com Arma", { Default = false }, function(Value)
-    if isUseHook then
-        env.enabledGunBot = Value
-        env.GunBotConnection = env.GunBotConnection or {}
-        local function setupGunBot(character)
-            if not character then return end
-            local gun = character:FindFirstChild("Gun")
-            if not gun then
-                if env.GunBotConnection.Connection then
-                    env.GunBotConnection.Connection:Disconnect()
-                    env.GunBotConnection.Connection = nil
-                end
-                return
-            end
-            local knifeScript = gun:FindFirstChild("KnifeLocal")
-            local cb = knifeScript and knifeScript:FindFirstChild("CreateBeam")
-            local remote = cb and cb:FindFirstChild("RemoteFunction")
-            if not knifeScript or not cb or not remote then return end
-            if env.enabledGunBot then
-                if env.GunBotConnection.Connection then
-                    env.GunBotConnection.Connection:Disconnect()
-                    env.GunBotConnection.Connection = nil
-                end
-                env.GunBotConnection.Connection = gun.Activated:Connect(function()
-                    local targetPos, isSelf = getMurdererTarget()
-                    if not targetPos or isSelf or not remote then return end
-                    remote:InvokeServer(1, targetPos, "AH2")
-                end)
-            else
+            if not env.enabledGunBot then
                 if env.GunBotConnection.Connection then
                     env.GunBotConnection.Connection:Disconnect()
                     env.GunBotConnection.Connection = nil
                 end
             end
-        end
-        while env.enabledGunBot do
-            if Char and Char:FindFirstChild("Gun") then
-                setupGunBot(Char)
+        else
+            if not env.AsChange then return end
+            if env.AsChange.Value then
+                env.AsChange:Set(false)
+                OrionLib:MakeNotification({
+                    Name = "Aviso",
+                    Content = "Seu executor não suporta essa função avançada!",
+                    Image = "rbxassetid://7733658504",
+                    Time = 3
+                })
             end
-            task.wait(0.25)
-        end
-        if not env.enabledGunBot then
-            if env.GunBotConnection.Connection then
-                env.GunBotConnection.Connection:Disconnect()
-                env.GunBotConnection.Connection = nil
-            end
-        end
-    else
-        if not env.AsChange then return end
-        if env.AsChange.Value then
-            env.AsChange:SetValue(false)
-            Library:Notify({ Title = "Aviso", Content = "Seu executor não suporta essa função avançada!", Duration = 3 })
         end
     end
-end)
-env.AsChange = AimbotToggle
+})
+env.AsChange = AimbotMem
 
--- =======================================================================
+-- =========================================================================
 -- ABA FLING
--- =======================================================================
-TabFling:AddSlider("Tempo Limite do Fling", 0.5, 10, 2.5, false, function(Value)
-    env.timeout = Value
-end)
+-- =========================================================================
+TabFling:AddSlider({
+    Name = "Tempo Limite do Fling",
+    Min = 0.5,
+    Max = 10,
+    Default = 2.5,
+    Color = Color3.fromRGB(255, 255, 255),
+    Increment = 0.1,
+    ValueName = "Segundos",
+    Callback = function(Value)
+        env.timeout = Value
+    end
+})
 
-TabFling:AddButton("Fling no Assassino", function()
-    local Murderer = nil
-    for plr, role in getRoles() do
-        if role == "Murderer" then
-            Murderer = Players:FindFirstChild(plr)
-            break
+TabFling:AddButton({
+    Name = "Fling no Assassino",
+    Callback = function()
+        local Murderer = nil
+        for plr, role in getRoles() do
+            if role == "Murderer" then
+                Murderer = Players:FindFirstChild(plr)
+                break
+            end
+        end
+        if Murderer and Murderer ~= LocalPlayer then
+            SHubFling(Murderer)
         end
     end
-    if Murderer and Murderer ~= LocalPlayer then
-        SHubFling(Murderer)
-    end
-end)
+})
 
-TabFling:AddButton("Fling no Xerife/Herói", function()
-    local Target = nil
-    for plr, role in getRoles() do
-        if role == "Sheriff" or role == "Hero" then
-            Target = Players:FindFirstChild(plr)
-            break
+TabFling:AddButton({
+    Name = "Fling no Xerife/Heroi",
+    Callback = function()
+        local Target = nil
+        for plr, role in getRoles() do
+            if role == "Sheriff" or role == "Hero" then
+                Target = Players:FindFirstChild(plr)
+                break
+            end
+        end
+        if Target and Target ~= LocalPlayer then
+            SHubFling(Target)
         end
     end
-    if Target and Target ~= LocalPlayer then
-        SHubFling(Target)
-    end
-end)
+})
 
 local TargetPlayer = nil
-local PlayerDropdown = TabFling:AddDropdown("Selecionar Jogador", { Values = getPlayerNames(), Default = nil, Multi = false }, function(Value)
-    TargetPlayer = Value
-end)
+local PlayerDropdown = TabFling:AddDropdown({
+    Name = "Selecionar Jogador",
+    Default = nil,
+    Options = getPlayerNames(),
+    Callback = function(Value)
+        TargetPlayer = Value
+    end
+})
 local function updateDropdown()
-    PlayerDropdown:SetList(getPlayerNames())
+    PlayerDropdown:Refresh(getPlayerNames(), true)
+    PlayerDropdown:Set(TargetPlayer)
 end
 Players.PlayerAdded:Connect(updateDropdown)
 Players.PlayerRemoving:Connect(updateDropdown)
 
-TabFling:AddButton("Fling no Selecionado", function()
-    if TargetPlayer then
-        local get = Players:FindFirstChild(TargetPlayer)
-        if get and get ~= LocalPlayer then
-            SHubFling(get)
+TabFling:AddButton({
+    Name = "Fling no Selecionado",
+    Callback = function()
+        if TargetPlayer then
+            local get = Players:FindFirstChild(TargetPlayer)
+            if get and get ~= LocalPlayer then
+                SHubFling(get)
+            end
         end
     end
-end)
+})
 
-TabFling:AddToggle("Fling por Toque", { Default = false }, function(Value)
-    env.isTouchfling = Value
-    local vel, movel = nil, 0.1
-    while env.isTouchfling do
-        RunService.Heartbeat:Wait()
-        vel = Root.Velocity
-        Root.Velocity = vel * 9e8 + Vector3.new(0, 9e8, 0)
-        RunService.RenderStepped:Wait()
-        if Char and Char.Parent and Root and Root.Parent then
-            Root.Velocity = vel
-        end
-        RunService.Stepped:Wait()
-        if Char and Char.Parent and Root and Root.Parent then
-            Root.Velocity = vel + Vector3.new(0, movel, 0)
-            movel = movel * -1
+TabFling:AddToggle({
+    Name = "Fling por Toque",
+    Default = false,
+    Callback = function(Value)
+        env.isTouchfling = Value
+        local vel, movel = nil, 0.1
+        while env.isTouchfling do
+            RunService.Heartbeat:Wait()
+            vel = Root.Velocity
+            Root.Velocity = vel * 9e8 + Vector3.new(0, 9e8, 0)
+            RunService.RenderStepped:Wait()
+            if Char and Char.Parent and Root and Root.Parent then
+                Root.Velocity = vel
+            end
+            RunService.Stepped:Wait()
+            if Char and Char.Parent and Root and Root.Parent then
+                Root.Velocity = vel + Vector3.new(0, movel, 0)
+                movel = movel * -1
+            end
         end
     end
-end)
+})
 
-TabFling:AddToggle("Anti-Fling (Noclip nos Inimigos)", { Default = false }, function(Value)
-    env.NoclipPlr = Value
-    if not env.NoclipPlr then
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character then
-                for _, v in pairs(player.Character:GetDescendants()) do
-                    if v:IsA("BasePart") then
-                        v.CanCollide = true
+TabFling:AddToggle({
+    Name = "Anti-Fling (Noclip nos Inimigos)",
+    Default = false,
+    Callback = function(value)
+        env.NoclipPlr = value
+        if not env.NoclipPlr then
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    for _, v in pairs(player.Character:GetDescendants()) do
+                        if v:IsA("BasePart") then
+                            v.CanCollide = true
+                        end
                     end
                 end
             end
         end
-    end
-    while env.NoclipPlr do
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character then
-                for _, v in pairs(player.Character:GetDescendants()) do
-                    if v:IsA("BasePart") then
-                        v.CanCollide = false
+        while env.NoclipPlr do
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    for _, v in pairs(player.Character:GetDescendants()) do
+                        if v:IsA("BasePart") then
+                            v.CanCollide = false
+                        end
                     end
                 end
             end
+            task.wait()
         end
-        task.wait()
     end
-end)
+})
 
--- =======================================================================
+-- =========================================================================
 -- ABA TELEPORTES
--- =======================================================================
-TabTeleport:AddButton("Teleportar para o Mapa", function()
-    local map = Workspace:FindFirstChild("CoinContainer", true)
-    if map and map.Parent then
-        local part = map:FindFirstChildWhichIsA("BasePart", true)
-        local parts = map.Parent:FindFirstChildWhichIsA("BasePart", true)
-        if Char and part and part.CFrame then
-            Char:PivotTo(part.CFrame * CFrame.new(0, 2, 0))
-        elseif Char and parts and parts.CFrame then
-            Char:PivotTo(parts.CFrame * CFrame.new(0, 2, 0))
-        elseif Root and part and part.CFrame then
-            Root.CFrame = part.CFrame * CFrame.new(0, 2, 0)
-        elseif Root and parts and parts.CFrame then
-            Root.CFrame = parts.CFrame * CFrame.new(0, 2, 0)
+-- =========================================================================
+TabTeleport:AddButton({
+    Name = "Teleportar para o Mapa",
+    Callback = function()
+        local map = Workspace:FindFirstChild("CoinContainer", true)
+        if map and map.Parent then
+            local part = map:FindFirstChildWhichIsA("BasePart", true)
+            local parts = map.Parent:FindFirstChildWhichIsA("BasePart", true)
+            if Char and part and part.CFrame then
+                Char:PivotTo(part.CFrame * CFrame.new(0, 2, 0))
+            elseif Char and parts and parts.CFrame then
+                Char:PivotTo(parts.CFrame * CFrame.new(0, 2, 0))
+            elseif Root and part and part.CFrame then
+                Root.CFrame = part.CFrame * CFrame.new(0, 2, 0)
+            elseif Root and parts and parts.CFrame then
+                Root.CFrame = parts.CFrame * CFrame.new(0, 2, 0)
+            end
         end
     end
-end)
+})
 
-TabTeleport:AddButton("Teleportar para o Lobby", function()
-    local lobby = Workspace:FindFirstChild("Lobby", true)
-    if lobby and lobby.Parent then
-        local part = lobby:FindFirstChildWhichIsA("BasePart", true)
-        local parts = lobby.Parent:FindFirstChildWhichIsA("BasePart", true)
-        if Char and part and part.CFrame then
-            Char:PivotTo(part.CFrame * CFrame.new(0, 2, 0))
-        elseif Char and parts and parts.CFrame then
-            Char:PivotTo(parts.CFrame * CFrame.new(0, 2, 0))
-        elseif Root and part and part.CFrame then
-            Root.CFrame = part.CFrame * CFrame.new(0, 2, 0)
-        elseif Root and parts and parts.CFrame then
-            Root.CFrame = parts.CFrame * CFrame.new(0, 2, 0)
+TabTeleport:AddButton({
+    Name = "Teleportar para o Lobby",
+    Callback = function()
+        local lobby = Workspace:FindFirstChild("Lobby", true)
+        if lobby and lobby.Parent then
+            local part = lobby:FindFirstChildWhichIsA("BasePart", true)
+            local parts = lobby.Parent:FindFirstChildWhichIsA("BasePart", true)
+            if Char and part and part.CFrame then
+                Char:PivotTo(part.CFrame * CFrame.new(0, 2, 0))
+            elseif Char and parts and parts.CFrame then
+                Char:PivotTo(parts.CFrame * CFrame.new(0, 2, 0))
+            elseif Root and part and part.CFrame then
+                Root.CFrame = part.CFrame * CFrame.new(0, 2, 0)
+            elseif Root and parts and parts.CFrame then
+                Root.CFrame = parts.CFrame * CFrame.new(0, 2, 0)
+            end
         end
     end
-end)
+})
 
--- =======================================================================
+-- =========================================================================
 -- ABA LOCAL PLAYER
--- =======================================================================
-TabLocal:AddToggle("Pulo Infinito", { Default = false }, function(Value)
-    env.InfiniteJump = Value
-    game:GetService("UserInputService").JumpRequest:Connect(function()
-        if env.InfiniteJump then
+-- =========================================================================
+TabLocal:AddToggle({
+    Name = "Pulo Infinito",
+    Default = false,
+    Callback = function(Value)
+        env.InfiniteJump = Value
+        game:GetService("UserInputService").JumpRequest:Connect(function()
+            if env.InfiniteJump then
+                if Char and Char ~= nil and Hum then
+                    Hum:ChangeState("Jumping")
+                end
+            end
+        end)
+    end
+})
+
+TabLocal:AddToggle({
+    Name = "Noclip",
+    Default = false,
+    Callback = function(value)
+        env.Noclip = value
+        if not env.Noclip then
+            if Char and Char ~= nil then
+                for _, c in pairs(Char:GetChildren()) do
+                    if c:IsA("BasePart") and not c.CanCollide then
+                        c.CanCollide = true
+                    end
+                end
+            end
+        end
+        while env.Noclip do
+            if Char and Char ~= nil then
+                for _, c in pairs(Char:GetChildren()) do
+                    if c:IsA("BasePart") and c.CanCollide then
+                        c.CanCollide = false
+                    end
+                end
+            end
+            task.wait()
+        end
+    end
+})
+
+TabLocal:AddSlider({
+    Name = "Velocidade de Corrida",
+    Min = 16,
+    Max = 350,
+    Default = env.Walkspeed or 16,
+    Color = Color3.fromRGB(255,255,255),
+    Increment = 1,
+    ValueName = "WalkSpeed",
+    Callback = function(Value)
+        if Char and Char ~= nil and Hum then
+            Hum.WalkSpeed = Value or 16
+        end
+        env.Walkspeed = Value or 16
+    end
+})
+TabLocal:AddTextbox({
+    Name = "Velocidade de Corrida",
+    Default = env.Walkspeed or "16",
+    TextDisappear = false,
+    Callback = function(Value)
+        if Char and Char ~= nil and Hum then
+            Hum.WalkSpeed = tonumber(Value) or 16
+        end
+        env.Walkspeed = tonumber(Value) or 16
+    end
+})
+TabLocal:AddToggle({
+    Name = "Manter Velocidade",
+    Default = false,
+    Callback = function(Value)
+        env.KeepWalkspeed = Value
+        while env.KeepWalkspeed do
             if Char and Char ~= nil and Hum then
-                Hum:ChangeState("Jumping")
-            end
-        end
-    end)
-end)
-
-TabLocal:AddToggle("Noclip", { Default = false }, function(Value)
-    env.Noclip = Value
-    if not env.Noclip then
-        if Char and Char ~= nil then
-            for _, c in pairs(Char:GetChildren()) do
-                if c:IsA("BasePart") and not c.CanCollide then
-                    c.CanCollide = true
+                if Hum.WalkSpeed ~= env.Walkspeed then
+                    Hum.WalkSpeed = env.Walkspeed
                 end
             end
+            task.wait()
         end
     end
-    while env.Noclip do
-        if Char and Char ~= nil then
-            for _, c in pairs(Char:GetChildren()) do
-                if c:IsA("BasePart") and c.CanCollide then
-                    c.CanCollide = false
-                end
-            end
-        end
-        task.wait()
-    end
-end)
+})
 
-TabLocal:AddSlider("Velocidade de Corrida", 16, 350, env.Walkspeed or 16, false, function(Value)
-    if Char and Char ~= nil and Hum then
-        Hum.WalkSpeed = Value or 16
-    end
-    env.Walkspeed = Value or 16
-end)
-TabLocal:AddInput("Velocidade de Corrida (Digitar)", { Default = env.Walkspeed or "16", Numeric = true, Placeholder = "Valor" }, function(Value)
-    if Char and Char ~= nil and Hum then
-        Hum.WalkSpeed = tonumber(Value) or 16
-    end
-    env.Walkspeed = tonumber(Value) or 16
-end)
-TabLocal:AddToggle("Manter Velocidade", { Default = false }, function(Value)
-    env.KeepWalkspeed = Value
-    while env.KeepWalkspeed do
+TabLocal:AddSlider({
+    Name = "Força do Pulo",
+    Min = 50,
+    Max = 500,
+    Default = env.Jumppower or 50,
+    Color = Color3.fromRGB(255,255,255),
+    Increment = 1,
+    ValueName = "JumpPower",
+    Callback = function(Value)
         if Char and Char ~= nil and Hum then
-            if Hum.WalkSpeed ~= env.Walkspeed then
-                Hum.WalkSpeed = env.Walkspeed
-            end
+            Hum.JumpPower = Value or 50
         end
-        task.wait()
+        env.Jumppower = Value or 50
     end
-end)
-
-TabLocal:AddSlider("Força do Pulo", 50, 500, env.Jumppower or 50, false, function(Value)
-    if Char and Char ~= nil and Hum then
-        Hum.JumpPower = Value or 50
-    end
-    env.Jumppower = Value or 50
-end)
-TabLocal:AddInput("Força do Pulo (Digitar)", { Default = env.Jumppower or "50", Numeric = true, Placeholder = "Valor" }, function(Value)
-    if Char and Char ~= nil and Hum then
-        Hum.JumpPower = tonumber(Value) or 50
-    end
-    env.Jumppower = tonumber(Value) or 50
-end)
-TabLocal:AddToggle("Manter Força do Pulo", { Default = false }, function(Value)
-    env.KeepJumppower = Value
-    while env.KeepJumppower do
+})
+TabLocal:AddTextbox({
+    Name = "Força do Pulo",
+    Default = env.Jumppower or "50",
+    TextDisappear = false,
+    Callback = function(Value)
         if Char and Char ~= nil and Hum then
-            if Hum.JumpPower ~= env.Jumppower then
-                Hum.JumpPower = env.Jumppower
-            end
+            Hum.JumpPower = tonumber(Value) or 50
         end
-        task.wait()
+        env.Jumppower = tonumber(Value) or 50
     end
-end)
-
-TabLocal:AddToggle("Vida Infinita", { Default = false }, function(Value)
-    local godcon, deathcon
-    env.enableGodmode = Value
-    local function IsGodmode()
-        return env.enableGodmode
-    end
-    local function UpdateGod()
-        if godcon then
-            godcon:Disconnect()
-            godcon = nil
-        end
-        if Hum then
-            godcon = Hum.HealthChanged:Connect(function()
-                if IsGodmode() and Hum.Health < Hum.MaxHealth then
-                    Hum.Health = Hum.MaxHealth
+})
+TabLocal:AddToggle({
+    Name = "Manter Força do Pulo",
+    Default = false,
+    Callback = function(Value)
+        env.KeepJumppower = Value
+        while env.KeepJumppower do
+            if Char and Char ~= nil and Hum then
+                if Hum.JumpPower ~= env.Jumppower then
+                    Hum.JumpPower = env.Jumppower
                 end
-            end)
+            end
+            task.wait()
         end
     end
-    local function OnCharacterAdded(newChar)
-        Char = newChar
-        Hum = Char:WaitForChild("Humanoid")
-        UpdateGod()
-    end
-    if deathcon then deathcon:Disconnect() end
-    deathcon = LocalPlayer.CharacterAdded:Connect(OnCharacterAdded)
-    UpdateGod()
-    task.spawn(function()
-        if not env.enableGodmode then
+})
+
+TabLocal:AddToggle({
+    Name = "Vida Infinita",
+    Default = false,
+    Callback = function(Value)
+        local godcon, deathcon
+        env.enableGodmode = Value
+        local function IsGodmode()
+            return env.enableGodmode
+        end
+        local function UpdateGod()
             if godcon then
                 godcon:Disconnect()
                 godcon = nil
             end
-        else
-            if not godcon then
-                UpdateGod()
+            if Hum then
+                godcon = Hum.HealthChanged:Connect(function()
+                    if IsGodmode() and Hum.Health < Hum.MaxHealth then
+                        Hum.Health = Hum.MaxHealth
+                    end
+                end)
             end
         end
-    end)
-end)
+        local function OnCharacterAdded(newChar)
+            Char = newChar
+            Hum = Char:WaitForChild("Humanoid")
+            UpdateGod()
+        end
+        if deathcon then deathcon:Disconnect() end
+        deathcon = LocalPlayer.CharacterAdded:Connect(OnCharacterAdded)
+        UpdateGod()
+        task.spawn(function()
+            if not env.enableGodmode then
+                if godcon then
+                    godcon:Disconnect()
+                    godcon = nil
+                end
+            else
+                if not godcon then
+                    UpdateGod()
+                end
+            end
+        end)
+    end
+})
